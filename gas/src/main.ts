@@ -1,3 +1,5 @@
+import type { GuildScheduledEvent } from "common/discord";
+
 const BOT_URL = "https://github.com/sohosai/google-calendar-discord-notify";
 const BOT_VERSION = "1.0.0";
 
@@ -111,7 +113,7 @@ class DiscordBot {
         const validatedLocation =
             locationLength <= MAX_LOCATION_LENGTH ? location : `${name.substring(0, MAX_LOCATION_LENGTH)}…`;
 
-        const body = {
+        const body: GuildScheduledEvent = {
             entity_metadata: { location: validatedLocation },
             name: name,
             privacy_level: 2, //GUILD_ONLY

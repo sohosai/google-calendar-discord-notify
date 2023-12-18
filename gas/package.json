@@ -1,5 +1,6 @@
 {
-    "name": "google-calendar-discord-notify",
+    "name": "gas",
+    "private": true,
     "version": "1.0.0",
     "description": "",
     "main": "main.ts",
@@ -7,16 +8,8 @@
         "tsc": "tsc",
         "format": "prettier --write src"
     },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/sohosai/google-calendar-discord-notify.git"
-    },
     "author": "Oka4shi",
     "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/sohosai/google-calendar-discord-notify/issues"
-    },
-    "homepage": "https://github.com/sohosai/google-calendar-discord-notify#readme",
     "devDependencies": {
         "@tsconfig/recommended": "^1.0.3",
         "@types/google-apps-script": "^1.0.78",

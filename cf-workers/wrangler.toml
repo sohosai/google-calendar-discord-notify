@@ -1,4 +1,4 @@
-name = "cf-workers"
+name = "google-calendar-discord-notify"
 main = "src/index.ts"
 compatibility_date = "2023-12-06"
 

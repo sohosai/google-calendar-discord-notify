@@ -11,18 +11,45 @@ export class DiscordBot {
         this.guildId = guildId;
     }
 
-    async postAPI(endpoint: string, body: object) {
-        const res = await fetch(`${DiscordBot._apiRoot}${endpoint}`, {
-            method: "post",
-            headers: {
-                "Content-Type": "application/json",
-                "User-Agent": `DiscordBot (${BOT_URL}, ${BOT_VERSION})`,
-                Authorization: `Bot ${this._token}`,
-            },
-            body: JSON.stringify(body),
-        });
+    async callAPI(
+        endpoint: string,
+        method: HttpMethod,
+        body: object,
+    ): Promise<{ response: unknown; status: number; error: false } | { error: true }> {
+        let res: Response;
+        try {
+            if (["POST", "PUT", "PATCH"].includes(method)) {
+                res = await fetch(`${DiscordBot._apiRoot}${endpoint}`, {
+                    method: method,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "User-Agent": `DiscordBot (${BOT_URL}, ${BOT_VERSION})`,
+                        Authorization: `Bot ${this._token}`,
+                    },
+                    body: JSON.stringify(body),
+                });
+            } else {
+                res = await fetch(`${DiscordBot._apiRoot}${endpoint}`, {
+                    method: method,
+                    headers: {
+                        "User-Agent": `DiscordBot (${BOT_URL}, ${BOT_VERSION})`,
+                        Authorization: `Bot ${this._token}`,
+                    },
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            return { error: true };
+        }
+
+        if (!res.ok) {
+            console.error(res);
+            return { error: true };
+        }
         const json = await res.json();
         const code = res.status;
-        return { response: json, status: code };
+        return { response: json, status: code, error: false };
     }
 }
+
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

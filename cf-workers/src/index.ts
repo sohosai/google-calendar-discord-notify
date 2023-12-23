@@ -20,6 +20,6 @@ export interface Env {
 
 const app = new Hono();
 app.get("/", (c) => c.text("Hello! This is a proxy for Google Apps Script and Discord API."));
-app.route("/api/guilds", events);
+app.route("/api", events);
 
 export default app;

@@ -15,6 +15,9 @@ function main() {
         const location = validateLocation(event.location);
         const startTime = event.start?.dateTime || (event.start?.date ? `${event.start?.date}T00:00:00+09:00` : null);
         const endTime = event.end?.dateTime || (event.end?.date ? `${event.end?.date}T00:00:00+09:00` : null);
+        const description =
+            (event.htmlLink && `[Google Calendarでイベントを見る](${event.htmlLink})\n\n`) +
+            convertDescription(event.description ?? "");
 
         if (!event.id) {
             console.error("Can't get the event id");
@@ -33,7 +36,7 @@ function main() {
                 location,
                 startTime,
                 endTime,
-                event.description,
+                description,
             );
             if (result.error) {
                 console.error("Can't create an event");
@@ -56,7 +59,7 @@ function main() {
                 location,
                 startTime,
                 endTime,
-                event.description,
+                description,
             );
         }
     });
@@ -108,6 +111,35 @@ function validateLocation(location?: string) {
     // MAX_LOCATION_LENGTH 以下になるようにlocationを加工
     const locationLength = [...loc].length; // Discordのカウントの仕様がよく分からないしこれでいいや
     return locationLength <= MAX_LOCATION_LENGTH ? loc : `${loc.substring(0, MAX_LOCATION_LENGTH)}…`;
+}
+
+function convertDescription(description: string): string {
+    // まずリストを変換
+    let markdown = description.replace(/<br>\s*- /gi, "<br>\\- ").replace(/<br>\s*(\d+)\. /gi, "<br>$1\\. ");
+    /<ul>(.+?)<\/ul>/gi
+        .exec(markdown)
+        ?.slice(1)
+        .forEach((ul) => (markdown = markdown.replace(ul, ul.replace(/<li>(.+?)(?:<br>)*<\/li>/gi, "- $1\n"))));
+    /<ol>(.+?)<\/ol>/gi
+        .exec(markdown)
+        ?.slice(1)
+        .forEach((ol) => (markdown = markdown.replace(ol, ol.replace(/<li>(.+?)(?:<br>)*<\/li>/gi, "1. $1\n"))));
+    markdown = markdown.replace(/<ul>|<ol>/gi, "").replace(/<\/ul>|<\/ol>/gi, "\n");
+
+    markdown = markdown
+        .replace(/\*/gi, "\\*")
+        .replace(/_/gi, "\\_")
+        .replace(/\(/gi, "\\(")
+        .replace(/\)/gi, "\\)")
+        .replace(/\[/gi, "\\[")
+        .replace(/\]/gi, "\\]")
+        .replace(/<b>|<\/b>/gi, "**")
+        .replace(/<i>|<\/i>/gi, "_")
+        .replace(/<u>|<\/u>/gi, "__")
+        .replace(/<br>/gi, "\n\n")
+        .replace(/<a href="(.+?)">(.+?)<\/a>/gi, "[$2]($1)");
+
+    return markdown;
 }
 
 class DiscordBot {

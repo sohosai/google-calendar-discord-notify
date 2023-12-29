@@ -1,14 +1,18 @@
 import type { GuildScheduledEvent, GuildScheduledEventModify } from "common/discord";
 
+type TriggerData = { time: string; id: string; ct: duration };
+
 function main() {
     const WORKERS_TOKEN = getProperty("WORKERS_TOKEN");
     const calendarId = getProperty("calendarId");
     const guildId = getProperty("guildId");
+    const notifyChannelId = getProperty("notifyChannelId");
 
     const syncToken = getProperty("nextSyncToken");
     const data = JSON.parse(getProperty("eventsData") || "{}") as { [k in string]: string };
 
-    const bot = new DiscordBot(WORKERS_TOKEN, guildId);
+    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId);
+    const triggerHandler = new TriggerHandler("triggersData");
 
     const events = getNewEvents(calendarId, syncToken);
     events?.forEach((event) => {
@@ -16,7 +20,7 @@ function main() {
         const startTime = event.start?.dateTime || (event.start?.date ? `${event.start?.date}T00:00:00+09:00` : null);
         const endTime = event.end?.dateTime || (event.end?.date ? `${event.end?.date}T00:00:00+09:00` : null);
         const description =
-            (event.htmlLink && `[Google Calendarでイベントを見る](${event.htmlLink})\n\n`) +
+            (event.htmlLink ? `[Google Calendarでイベントを見る](${event.htmlLink})\n\n` : "") +
             convertDescription(event.description ?? "");
 
         if (!event.id) {
@@ -40,17 +44,33 @@ function main() {
             );
             if (result.error) {
                 console.error("Can't create an event");
+                bot.sendMessage("Google Calendarに予定が作成されましたが、Discordのイベントの作成に失敗しました");
                 return;
-            } else {
-                const id = result.response.id;
-                if (typeof id === "string") {
-                    data[event.id] = id;
-                    setProperty("eventsData", JSON.stringify(data));
-                } else {
-                    console.error("Malformed response from discord");
-                    return;
-                }
             }
+
+            const id = result.response.id;
+            if (typeof id !== "string") {
+                console.error("Malformed response from discord");
+                return;
+            }
+
+            data[event.id] = id;
+            setProperty("eventsData", JSON.stringify(data));
+            const triggers: TriggerData[] = (["1h", "1d"] as const).map((d) => ({
+                time: TriggerHandler.getDateBefore(startTime, d),
+                id: id,
+                ct: d,
+            }));
+            triggerHandler.addTriggers(triggers);
+
+            triggerHandler.setLatestTrigger("notify");
+
+            const message =
+                `新しいイベントがGoogle Calendarに作成されました\n` +
+                (result.response.guild_id && result.response.id
+                    ? `https://discord.com/events/${result.response.guild_id}/${result.response.id}`
+                    : "");
+            bot.sendMessage(message);
         } else {
             // 既にあるなら編集
             const result = bot.modifyGuildScheduledEvent(
@@ -61,8 +81,71 @@ function main() {
                 endTime,
                 description,
             );
+
+            if (result.error) {
+                console.error("Can't modify a guild event");
+                bot.sendMessage("Google Calendarの予定が編集されましたが、Discordのイベントの更新に失敗しました");
+                return;
+            }
+
+            const id = result.response.id;
+            if (typeof id !== "string") {
+                console.error("Malformed response from discord");
+                return;
+            }
+
+            triggerHandler.deleteTriggers([id]);
+            const newTriggers: TriggerData[] = (["1h", "1d"] as const).map((d) => ({
+                time: TriggerHandler.getDateBefore(startTime, d),
+                id: id,
+                ct: d,
+            }));
+            triggerHandler.addTriggers(newTriggers);
+
+            triggerHandler.setLatestTrigger("notify");
+
+            const message =
+                `イベントの内容が編集されました\n` +
+                (result.response.guild_id && id ? `https://discord.com/events/${result.response.guild_id}/${id}` : "");
+            bot.sendMessage(message);
         }
     });
+}
+
+function notify() {
+    const WORKERS_TOKEN = getProperty("WORKERS_TOKEN");
+    const guildId = getProperty("guildId");
+    const notifyChannelId = getProperty("notifyChannelId");
+
+    const triggers = JSON.parse(getProperty("triggersData") || "[]") as TriggerData[];
+
+    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId);
+
+    const now = new Date();
+
+    deleteAllTriggers();
+    try {
+        for (const t of triggers) {
+            const triggerTime = new Date(t.time);
+            if (triggerTime.getTime() - now.getTime() <= 15 * 60 * 1000) {
+                triggers.shift();
+
+                const before = t.ct.replace("d", "日").replace("h", "時間");
+                const message =
+                    `${before}後にイベントがあります\n` +
+                    (guildId && t.id
+                        ? `https://discord.com/events/${guildId}/${t.id}`
+                        : "詳細情報の取得に失敗しました");
+
+                bot.sendMessage(message);
+            } else {
+                break;
+            }
+        }
+        setProperty("triggersData", JSON.stringify(triggers));
+    } finally {
+        setTrigger(triggers[0].time, "notify");
+    }
 }
 
 function getNewEvents(calendarId: string, token?: string): GoogleAppsScript.Calendar.Schema.Event[] | undefined {
@@ -92,16 +175,6 @@ function getNewEvents(calendarId: string, token?: string): GoogleAppsScript.Cale
     }
 
     return eventList;
-}
-
-function getProperty(key: string): string {
-    const properties = PropertiesService.getScriptProperties();
-    return properties.getProperty(key) ?? "";
-}
-
-function setProperty(key: string, value: string): GoogleAppsScript.Properties.Properties {
-    const properties = PropertiesService.getScriptProperties();
-    return properties.setProperty(key, value);
 }
 
 function validateLocation(location?: string) {
@@ -142,14 +215,41 @@ function convertDescription(description: string): string {
     return markdown;
 }
 
+function getProperty(key: string): string {
+    const properties = PropertiesService.getScriptProperties();
+    return properties.getProperty(key) ?? "";
+}
+
+function setProperty(key: string, value: string): GoogleAppsScript.Properties.Properties {
+    const properties = PropertiesService.getScriptProperties();
+    return properties.setProperty(key, value);
+}
+
+function setTrigger(dateTime: ISO8601, functionName: string) {
+    const date = new Date(dateTime);
+    return ScriptApp.newTrigger(functionName).timeBased().at(date).create();
+}
+main;
+
+function deleteAllTriggers() {
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach((trigger) => {
+        if (trigger.getEventType() == ScriptApp.EventType.CLOCK) {
+            ScriptApp.deleteTrigger(trigger);
+        }
+    });
+}
+
 class DiscordBot {
     static _apiRoot: string = getProperty("apiRoot");
     _token: string = "";
     guildId: string = "";
+    channelId: string = "";
 
-    constructor(botToken: string, guildId: string) {
+    constructor(botToken: string, guildId: string, notifyChannelId: string) {
         this._token = botToken;
         this.guildId = guildId;
+        this.channelId = notifyChannelId;
     }
 
     _callAPI(
@@ -228,6 +328,58 @@ class DiscordBot {
         };
         return this._callAPI(`/guilds/${this.guildId}/scheduled-events/${discordEventId}`, "patch", body);
     }
+
+    sendMessage(content: string) {
+        const body = {
+            content: content,
+            tts: false,
+        };
+
+        return this._callAPI(`/channels/${this.channelId}/messages`, "post", body);
+    }
+}
+
+class TriggerHandler {
+    _propertyName = "";
+    _triggersData: TriggerData[] = [];
+
+    constructor(propertyName: string) {
+        this._propertyName = propertyName;
+        this._triggersData = JSON.parse(getProperty(propertyName) || "[]") as TriggerData[];
+    }
+
+    static getDateBefore(base: ISO8601, diff: duration): ISO8601 {
+        const date = new Date(base);
+        if (diff.includes("h")) {
+            date.setHours(date.getHours() - parseInt(diff));
+        } else if (diff.includes("d")) {
+            date.setDate(date.getDate() - parseInt(diff));
+        }
+        return date.toISOString();
+    }
+    addTriggers(newTriggers: TriggerData[]) {
+        const now = new Date();
+        for (const t of newTriggers) {
+            const tDate = new Date(t.time);
+            if (now < tDate) {
+                this._triggersData.push(t);
+            }
+        }
+        this._triggersData.sort((a, b) => (a.time <= b.time ? -1 : 1));
+        setProperty(this._propertyName, JSON.stringify(this._triggersData));
+    }
+
+    deleteTriggers(ids: string[]) {
+        this._triggersData = this._triggersData.filter((t) => ids.every((id) => t.id !== id));
+        setProperty(this._propertyName, JSON.stringify(this._triggersData));
+    }
+
+    setLatestTrigger(functionName: string) {
+        deleteAllTriggers();
+        setTrigger(this._triggersData[0].time, functionName);
+    }
 }
 
 type ISO8601 = string;
+
+type duration = `${number}d` | `${number}h`;

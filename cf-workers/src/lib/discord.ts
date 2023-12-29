@@ -4,11 +4,9 @@ const BOT_VERSION = "1.0.0";
 export class DiscordBot {
     static _apiRoot: string = "https://discord.com/api/v10";
     _token: string = "";
-    guildId: string = "";
 
-    constructor(botToken: string, guildId: string) {
+    constructor(botToken: string) {
         this._token = botToken;
-        this.guildId = guildId;
     }
 
     async callAPI(

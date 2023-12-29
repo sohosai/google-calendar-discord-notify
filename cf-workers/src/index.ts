@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { events } from "./api/events";
+import { messages } from "./api/messages"
 
 export interface Env {
     // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
@@ -21,5 +22,6 @@ export interface Env {
 const app = new Hono();
 app.get("/", (c) => c.text("Hello! This is a proxy for Google Apps Script and Discord API."));
 app.route("/api", events);
+app.route("/api", messages);
 
 export default app;

@@ -12,7 +12,7 @@ events
         const body = await c.req.json<GuildScheduledEvent>();
 
         const { DISCORD_BOT_TOKEN } = env<{ DISCORD_BOT_TOKEN: string }>(c);
-        const bot = new DiscordBot(DISCORD_BOT_TOKEN, guildId);
+        const bot = new DiscordBot(DISCORD_BOT_TOKEN);
 
         const res = await bot.callAPI(`/guilds/${guildId}/scheduled-events`, "POST", body);
         if (res.error) {
@@ -27,7 +27,7 @@ events
         const body = await c.req.json<GuildScheduledEvent>();
 
         const { DISCORD_BOT_TOKEN } = env<{ DISCORD_BOT_TOKEN: string }>(c);
-        const bot = new DiscordBot(DISCORD_BOT_TOKEN, guildId);
+        const bot = new DiscordBot(DISCORD_BOT_TOKEN);
 
         const res = await bot.callAPI(`/guilds/${guildId}/scheduled-events/${guildScheduledEventId}`, "PATCH", body);
         if (res.error) {

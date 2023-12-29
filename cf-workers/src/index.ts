@@ -1,6 +1,9 @@
 import { Hono } from "hono";
+import { env } from "hono/adapter";
+import { bearerAuth } from "hono/bearer-auth";
+
 import { events } from "./api/events";
-import { messages } from "./api/messages"
+import { messages } from "./api/messages";
 
 export interface Env {
     // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
@@ -20,6 +23,13 @@ export interface Env {
 }
 
 const app = new Hono();
+
+app.use("/api/*", async (c, next) => {
+    const { WORKERS_TOKEN } = env<{ WORKERS_TOKEN: string }>(c);
+    const auth = bearerAuth({ token: WORKERS_TOKEN });
+    await auth(c, next);
+});
+
 app.get("/", (c) => c.text("Hello! This is a proxy for Google Apps Script and Discord API."));
 app.route("/api", events);
 app.route("/api", messages);

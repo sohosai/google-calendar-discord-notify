@@ -13,7 +13,7 @@ export class DiscordBot {
         endpoint: string,
         method: HttpMethod,
         body: object,
-    ): Promise<{ response: unknown; status: number; error: false } | { error: true }> {
+    ): Promise<{ response?: unknown; status?: number; error: boolean }> {
         let res: Response;
         try {
             if (["POST", "PUT", "PATCH"].includes(method)) {
@@ -40,13 +40,9 @@ export class DiscordBot {
             return { error: true };
         }
 
-        if (!res.ok) {
-            console.error(res);
-            return { error: true };
-        }
         const json = await res.json();
         const code = res.status;
-        return { response: json, status: code, error: false };
+        return { response: json, status: code, error: !res.ok };
     }
 }
 

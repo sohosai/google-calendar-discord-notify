@@ -13,7 +13,8 @@ messages.post("/channels/:channel.id/messages", async (c) => {
     const bot = new DiscordBot(DISCORD_BOT_TOKEN);
 
     const res = await bot.callAPI(`/channels/${channelId}/messages`, "POST", body);
-    if (res.error) {
+    if (res.error && !(res.response && res.status)) {
+        console.error(res.response)
         return new Response(null, { status: 500 });
     } else {
         return c.json(res.response, res.status);

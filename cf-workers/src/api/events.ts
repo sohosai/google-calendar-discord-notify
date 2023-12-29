@@ -15,7 +15,8 @@ events
         const bot = new DiscordBot(DISCORD_BOT_TOKEN);
 
         const res = await bot.callAPI(`/guilds/${guildId}/scheduled-events`, "POST", body);
-        if (res.error) {
+        if (res.error && !(res.response && res.status)) {
+            console.error(res.response)
             return new Response(null, { status: 500 });
         } else {
             return c.json(res.response, res.status);
@@ -30,7 +31,9 @@ events
         const bot = new DiscordBot(DISCORD_BOT_TOKEN);
 
         const res = await bot.callAPI(`/guilds/${guildId}/scheduled-events/${guildScheduledEventId}`, "PATCH", body);
-        if (res.error) {
+
+        if (res.error && !(res.response && res.status)) {
+            console.error(res.response)
             return new Response(null, { status: 500 });
         } else {
             return c.json(res.response, res.status);

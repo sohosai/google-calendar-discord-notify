@@ -1,10 +1,12 @@
 ## デプロイ方法
-あらかじめDiscord Botを作成しておく。`Manage Events`、`Create Events`、`Send Messages`の権限が必要。
+### 準備
+- あらかじめDiscord Botを作成しておく。`Manage Events`、`Create Events`、`Send Messages`の権限が必要。
+- また、Cloudflare Workersの設定・デプロイにwranglerを使用する場合は、導入とログインを済ませておく。
 
-1. クローンする
+### 手順
 
-### Cloudflare Workersの設定
-2. `cf-workers`ディレクトリに移動した上で、`wrangler secret put <キー名>` を実行し以下を設定。
+1. リポジトリをクローンし、`npm install`で依存関係をインストールする
+2. `cf-workers`ディレクトリに移動した上で、`wrangler secret put <キー名>` を実行し以下を設定する
 
 |       キー        |                                値                                  |
 |-------------------|-------------------------------------------------------------------|
@@ -12,9 +14,6 @@
 | DISCORD_BOT_TOKEN | Discordのbotトークン。OAuthの設定にあるClient Secretではないので注意  |
 
 3. `npm run deploy`などでCloudFlare Wokersにデプロイ
-
-### Google Apps Script (GAS)の設定
-
 4. `npm run -w gas tsc` を実行し、gas/dist/main.jsの内容をGASにコピペする
 5. 2行目の`Object.defineProperty(exports, "__esModule", { value: true });`を削除する
 6. GASのエディタにある、「プロジェクトの設定」→「スクリプト プロパティ」で、以下のように設定する
@@ -28,7 +27,7 @@
 |notifyChannelId| 通知を送るDiscordチャンネルのchannel ID                                                                  |
 
 
-7. GASのトリガーを設定。GASエディタの、「トリガー」→右下にある「トリガーを追加」を押して、出てきたウィンドウで以下のように設定
+7. GASのトリガーを設定。GASエディタの、「トリガー」→右下にある「トリガーを追加」を押して、出てきたウィンドウで以下のように設定する
 
 |                項目                |                    内容                    |
 |-----------------------------------|--------------------------------------------|

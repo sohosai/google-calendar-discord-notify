@@ -35,6 +35,15 @@ function main() {
 
         if (!data[event.id]) {
             // 既になければ新規作成
+            const now = new Date();
+            const startTimeDate = new Date(startTime);
+            if (now > startTimeDate) {
+                bot.sendMessage(
+                    "Google Calendarに予定が作成されましたが、過去の予定であるためDiscordのイベントは作成しません\n" +
+                        (event.htmlLink ? `[Google Calendarでイベントを見る](${event.htmlLink})\n\n` : ""),
+                );
+                return;
+            }
             const result = bot.createGuildScheduledEvent(
                 event.summary || "名称未定",
                 location,
@@ -44,7 +53,11 @@ function main() {
             );
             if (result.error) {
                 console.error("Can't create an event");
-                bot.sendMessage("Google Calendarに予定が作成されましたが、Discordのイベントの作成に失敗しました");
+                bot.sendMessage(
+                    "Google Calendarに予定が作成されましたが、Discordのイベントの作成に失敗しました\n" +
+                        (event.htmlLink ? `[Google Calendarでイベントを見る](${event.htmlLink})\n\n` : ""),
+                );
+
                 return;
             }
 
@@ -66,7 +79,7 @@ function main() {
             triggerHandler.setLatestTrigger("notify");
 
             const message =
-                `新しいイベントがGoogle Calendarに作成されました\n` +
+                `新しい予定がGoogle Calendarに作成されました\n` +
                 (result.response.guild_id && result.response.id
                     ? `https://discord.com/events/${result.response.guild_id}/${result.response.id}`
                     : "");
@@ -84,7 +97,11 @@ function main() {
 
             if (result.error) {
                 console.error("Can't modify a guild event");
-                bot.sendMessage("Google Calendarの予定が編集されましたが、Discordのイベントの更新に失敗しました");
+                bot.sendMessage(
+                    "Google Calendarの予定が編集されましたが、Discordのイベントの更新に失敗しました。\n" +
+                        "既に終了した予定を編集していませんか？\n" +
+                        +(event.htmlLink ? `[Google Calendarでイベントを見る](${event.htmlLink})\n\n` : ""),
+                );
                 return;
             }
 
@@ -105,7 +122,7 @@ function main() {
             triggerHandler.setLatestTrigger("notify");
 
             const message =
-                `イベントの内容が編集されました\n` +
+                `Google Calendarの予定の内容が編集されました\n` +
                 (result.response.guild_id && id ? `https://discord.com/events/${result.response.guild_id}/${id}` : "");
             bot.sendMessage(message);
         }

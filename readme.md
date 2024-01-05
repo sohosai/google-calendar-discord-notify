@@ -25,6 +25,7 @@
 |  calendarId   | Google CalendarのCalendar ID。設定みたいな項目から確認できる                                              |
 |    guildId    | イベントを作成するDiscordサーバーのguild ID                                                              |
 |notifyChannelId| 通知を送るDiscordチャンネルのchannel ID                                                                  |
+| messagePrefix | 通知のメッセージの先頭につける内容。メンションなどに使うとよい                                              |
 
 
 7. GASのトリガーを設定。GASエディタの、「トリガー」→右下にある「トリガーを追加」を押して、出てきたウィンドウで以下のように設定する

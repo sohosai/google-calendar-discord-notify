@@ -2,6 +2,8 @@ import type { GuildScheduledEvent, GuildScheduledEventModify } from "common/disc
 
 type TriggerData = { time: string; id: string; ct: duration };
 
+const NOTIFICATION_TIMING: duration[] = ["1d"] as const; // 通知のタイミング。「<数字>d」もしくは「<数字>h」の形式の文字列の配列
+
 function main() {
     const WORKERS_TOKEN = getProperty("WORKERS_TOKEN");
     const calendarId = getProperty("calendarId");
@@ -69,7 +71,7 @@ function main() {
 
             data[event.id] = id;
             setProperty("eventsData", JSON.stringify(data));
-            const triggers: TriggerData[] = (["1h", "1d"] as const).map((d) => ({
+            const triggers: TriggerData[] = NOTIFICATION_TIMING.map((d) => ({
                 time: TriggerHandler.getDateBefore(startTime, d),
                 id: id,
                 ct: d,
@@ -112,7 +114,7 @@ function main() {
             }
 
             triggerHandler.deleteTriggers([id]);
-            const newTriggers: TriggerData[] = (["1h", "1d"] as const).map((d) => ({
+            const newTriggers: TriggerData[] = NOTIFICATION_TIMING.map((d) => ({
                 time: TriggerHandler.getDateBefore(startTime, d),
                 id: id,
                 ct: d,

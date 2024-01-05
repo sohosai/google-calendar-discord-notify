@@ -135,6 +135,7 @@ function notify() {
     const WORKERS_TOKEN = getProperty("WORKERS_TOKEN");
     const guildId = getProperty("guildId");
     const notifyChannelId = getProperty("notifyChannelId");
+    const messagePrefix = getProperty("messagePrefix");
 
     const triggers = JSON.parse(getProperty("triggersData") || "[]") as TriggerData[];
 
@@ -151,7 +152,8 @@ function notify() {
 
                 const before = t.ct.replace("d", "日").replace("h", "時間");
                 const message =
-                    `${before}後にイベントがあります\n` +
+                    messagePrefix +
+                    ` ${before}後にイベントがあります\n` +
                     (guildId && t.id
                         ? `https://discord.com/events/${guildId}/${t.id}`
                         : "詳細情報の取得に失敗しました");

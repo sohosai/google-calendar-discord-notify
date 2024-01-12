@@ -9,11 +9,12 @@ function main() {
     const calendarId = getProperty("calendarId");
     const guildId = getProperty("guildId");
     const notifyChannelId = getProperty("notifyChannelId");
+    const announceChannelId = getProperty("announceChannelId");
 
     const syncToken = getProperty("nextSyncToken");
     const data = JSON.parse(getProperty("eventsData") || "{}") as { [k in string]: string };
 
-    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId);
+    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId, announceChannelId);
     const triggerHandler = new TriggerHandler("triggersData");
 
     const events = getNewEvents(calendarId, syncToken);
@@ -136,10 +137,11 @@ function notify() {
     const guildId = getProperty("guildId");
     const notifyChannelId = getProperty("notifyChannelId");
     const messagePrefix = getProperty("messagePrefix");
+    const announceChannelId = getProperty("announceChannelId");
 
     const triggers = JSON.parse(getProperty("triggersData") || "[]") as TriggerData[];
 
-    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId);
+    const bot = new DiscordBot(WORKERS_TOKEN, guildId, notifyChannelId, announceChannelId);
 
     const now = new Date();
 
@@ -158,7 +160,7 @@ function notify() {
                         ? `https://discord.com/events/${guildId}/${t.id}`
                         : "詳細情報の取得に失敗しました");
 
-                bot.sendMessage(message);
+                bot.sendMessage(message, true);
             } else {
                 break;
             }
@@ -267,10 +269,13 @@ class DiscordBot {
     guildId: string = "";
     channelId: string = "";
 
-    constructor(botToken: string, guildId: string, notifyChannelId: string) {
+    announceChannelId: string = "";
+
+    constructor(botToken: string, guildId: string, notifyChannelId: string, announceChannleId: string) {
         this._token = botToken;
         this.guildId = guildId;
         this.channelId = notifyChannelId;
+        this.announceChannelId = announceChannleId;
     }
 
     _callAPI(
@@ -350,14 +355,19 @@ class DiscordBot {
         return this._callAPI(`/guilds/${this.guildId}/scheduled-events/${discordEventId}`, "patch", body);
     }
 
-    sendMessage(content: string) {
+    sendMessage(content: string, isAnnounce?: boolean) {
         const body = {
             content: content,
             tts: false,
         };
 
-        return this._callAPI(`/channels/${this.channelId}/messages`, "post", body);
+        if (isAnnounce) {
+            return this._callAPI(`/channels/${this.announceChannelId}/messages`, "post", body);
+        } else {
+            return this._callAPI(`/channels/${this.channelId}/messages`, "post", body);
+        }
     }
+
 }
 
 class TriggerHandler {

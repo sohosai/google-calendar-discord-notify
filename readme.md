@@ -25,6 +25,7 @@
 |  calendarId   | Google CalendarのCalendar ID。設定みたいな項目から確認できる                                              |
 |    guildId    | イベントを作成するDiscordサーバーのguild ID                                                              |
 |notifyChannelId| 通知を送るDiscordチャンネルのchannel ID                                                                  |
+|announceChannelId| アナウンス通知を送るDiscordチャンネルのchannel ID                                                                  |
 | messagePrefix | 通知のメッセージの先頭につける内容。メンションなどに使うとよい                                              |
 
 

@@ -368,7 +368,6 @@ class DiscordBot {
         }
     }
 
-    announceMessage(content: string) {}
 }
 
 class TriggerHandler {
